@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puertas Controladas — Verificación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14161a; --surface:#1e2126; --surface-2:#262a30; --surface-3:#2d3239;
+    --border:#33383f; --border-soft:#2a2e34;
+    --amber:#f2a93b; --amber-dark:#3d2c05;
+    --success:#4fae6d; --success-bg:#1c2a20;
+    --danger:#e2483a; --danger-bg:#2c1917;
+    --text:#eceff2; --text-2:#9aa0a8; --text-3:#6b7078;
+    --font-display:'Barlow Condensed',sans-serif;
+    --font-body:'Inter',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body);
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  .hazard-bar{
+    height:6px; width:100%;
+    background:repeating-linear-gradient(135deg, var(--amber) 0 14px, #14161a 14px 28px);
+  }
+  header.top{
+    padding:20px 20px 0; max-width:720px; margin:0 auto;
+  }
+  .brand{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .brand h1{
+    font-family:var(--font-display); font-weight:700; font-size:26px; letter-spacing:0.5px;
+    text-transform:uppercase; margin:0; color:var(--text);
+  }
+  .brand .sub{font-size:12px; color:var(--text-3); font-family:var(--font-mono);}
+  nav.tabs{
+    display:flex; gap:4px; margin:18px 0 0; border-bottom:1px solid var(--border);
+    max-width:720px; margin-left:auto; margin-right:auto; padding:0 20px;
+  }
+  nav.tabs button{
+    font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:0.3px;
+    text-transform:uppercase; background:none; border:none; color:var(--text-3);
+    padding:10px 4px; margin-right:24px; cursor:pointer; position:relative; border-radius:0;
+  }
+  nav.tabs button.active{color:var(--amber);}
+  nav.tabs button.active::after{
+    content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--amber);
+  }
+  main{max-width:720px; margin:0 auto; padding:20px; padding-bottom:80px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .field-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-3);
+    margin-bottom:6px; display:block; font-weight:500;
+  }
+  select, textarea, input[type=text]{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+    font-family:var(--font-body); font-size:15px; padding:11px 12px; border-radius:6px;
+  }
+  select:focus, textarea:focus, input:focus{outline:2px solid var(--amber); outline-offset:1px;}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
+    padding:16px; margin-bottom:14px;
+  }
+
+  /* --- Supervisor: selector de puerta --- */
+  .picker-row{display:flex; flex-direction:column; gap:14px; margin-bottom:18px;}
+
+  .door-result{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:12px 14px; background:var(--surface-2); border:1px solid var(--border-soft);
+    border-radius:8px; margin-bottom:8px; cursor:pointer;
+  }
+  .door-result:hover{border-color:var(--amber);}
+  .door-code{font-family:var(--font-mono); font-size:13px; color:var(--text);}
+  .door-desc{font-size:12px; color:var(--text-3); margin-top:2px;}
+  .status-pill{
+    font-size:10px; text-transform:uppercase; letter-spacing:0.4px; font-weight:600;
+    padding:3px 8px; border-radius:20px; white-space:nowrap;
+  }
+  .status-pill.ok{background:var(--success-bg); color:var(--success);}
+  .status-pill.fail{background:var(--danger-bg); color:var(--danger);}
+
+  /* --- Formulario de revisión --- */
+  #reviewForm{display:none;}
+  .review-header{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+    padding-bottom:14px; border-bottom:1px solid var(--border); margin-bottom:16px;
+  }
+  .review-header .door-code{font-size:16px;}
+  .back-link{
+    font-size:12px; color:var(--text-3); text-decoration:none; display:inline-flex;
+    align-items:center; gap:4px; margin-bottom:10px; cursor:pointer; background:none; border:none; font-family:var(--font-body);
+  }
+  .back-link:hover{color:var(--amber);}
+
+  .toggle-group{display:flex; gap:10px; margin:6px 0 18px;}
+  .toggle-btn{
+    flex:1; padding:14px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text-2); font-family:var(--font-display); font-weight:600; font-size:16px;
+    letter-spacing:0.4px; text-transform:uppercase; cursor:pointer;
+  }
+  .toggle-btn.si.selected{background:var(--success-bg); border-color:var(--success); color:var(--success);}
+  .toggle-btn.no.selected{background:var(--danger-bg); border-color:var(--danger); color:var(--danger);}
+
+  .evidence-row{display:flex; gap:10px; margin-top:6px;}
+  .evidence-box{
+    flex:1; border:1px dashed var(--border); border-radius:8px; padding:16px 10px;
+    text-align:center; cursor:pointer; background:var(--surface-2); font-size:12px; color:var(--text-3);
+  }
+  .evidence-box.filled{border-style:solid; border-color:var(--amber); color:var(--amber);}
+  .evidence-box svg{display:block; margin:0 auto 6px;}
+  #photoInput{display:none;}
+  #photoPreview{max-width:100%; border-radius:6px; margin-top:10px; display:none; border:1px solid var(--border);}
+
+  canvas#sigPad{
+    width:100%; height:140px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:8px; touch-action:none; display:block;
+  }
+  .sig-actions{display:flex; justify-content:space-between; align-items:center; margin-top:8px;}
+  .link-btn{background:none; border:none; color:var(--text-3); font-size:12px; cursor:pointer; font-family:var(--font-body);}
+  .link-btn:hover{color:var(--amber);}
+
+  .geo-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);
+    color:var(--text); font-family:var(--font-body); font-size:14px; cursor:pointer; margin-top:4px;
+  }
+  .geo-btn.captured{border-color:var(--success); color:var(--success);}
+  .geo-result{font-family:var(--font-mono); font-size:11px; color:var(--text-3); margin-top:6px;}
+
+  .section-gap{margin-top:20px;}
+
+  .submit-btn{
+    width:100%; padding:15px; border-radius:8px; border:none; background:var(--amber);
+    color:var(--amber-dark); font-family:var(--font-display); font-weight:700; font-size:18px;
+    letter-spacing:0.5px; text-transform:uppercase; cursor:pointer; margin-top:22px;
+  }
+  .submit-btn:disabled{background:var(--surface-3); color:var(--text-3); cursor:not-allowed;}
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2); border:1px solid var(--success); color:var(--text);
+    padding:13px 20px; border-radius:8px; font-size:14px; opacity:0; transition:all .25s ease;
+    pointer-events:none; z-index:50; display:flex; align-items:center; gap:8px;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* --- Dashboard revisor --- */
+  .summary-row{display:flex; gap:10px; margin-bottom:18px;}
+  .summary-card{
+    flex:1; background:var(--surface); border:1px solid var(--border-soft); border-radius:10px;
+    padding:14px; text-align:center;
+  }
+  .summary-card .num{font-family:var(--font-display); font-size:30px; font-weight:700; color:var(--text);}
+  .summary-card.alert .num{color:var(--danger);}
+  .summary-card .label{font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-3); margin-top:2px;}
+
+  .filter-row{display:flex; gap:10px; margin-bottom:16px;}
+  .filter-row select{font-size:13px; padding:9px 10px;}
+
+  .rev-item{
+    background:var(--surface); border:1px solid var(--border-soft); border-left:3px solid var(--border);
+    border-radius:8px; padding:14px; margin-bottom:10px;
+  }
+  .rev-item.fail{border-left-color:var(--danger);}
+  .rev-item.ok{border-left-color:var(--success);}
+  .rev-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .rev-meta{font-size:11px; color:var(--text-3); margin-top:4px; font-family:var(--font-mono);}
+  .rev-obs{font-size:13px; color:var(--text-2); margin-top:8px; line-height:1.5;}
+  .rev-badges{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .badge{
+    font-size:10px; padding:3px 8px; border-radius:5px; background:var(--surface-2);
+    color:var(--text-3); border:1px solid var(--border-soft);
+  }
+  .badge.has{color:var(--amber); border-color:var(--amber);}
+
+  .empty-state{text-align:center; padding:40px 20px; color:var(--text-3); font-size:13px;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+
+<div class="hazard-bar"></div>
+<header class="top">
+  <div class="brand">
+    <h1>Puertas controladas</h1>
+    <span class="sub">SharePoint · demo</span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button id="tabSupervisor" class="active" onclick="switchTab('supervisor')">Supervisor</button>
+  <button id="tabRevisor" onclick="switchTab('revisor')">Equipo revisor</button>
+</nav>
+
+<main>
+
+  <!-- ================= VISTA SUPERVISOR ================= -->
+  <section id="viewSupervisor" class="view active">
+
+    <div id="pickerView">
+      <div class="picker-row">
+        <div>
+          <span class="field-label">Planta</span>
+          <select id="plantaSelect" onchange="renderDoorList()">
+            <option value="">Selecciona una planta…</option>
+          </select>
+        </div>
+        <div>
+          <span class="field-label">Buscar puerta</span>
+          <input type="text" id="doorSearch" placeholder="Código o descripción…" oninput="renderDoorList()">
+        </div>
+      </div>
+      <div id="doorList"></div>
+    </div>
+
+    <form id="reviewForm" onsubmit="return submitReview(event)">
+      <button type="button" class="back-link" onclick="backToPicker()">← Volver a la lista</button>
+      <div class="review-header">
+        <div>
+          <div class="door-code" id="formDoorCode"></div>
+          <div class="door-desc" id="formDoorDesc"></div>
+        </div>
+      </div>
+
+      <span class="field-label">¿Funciona correctamente?</span>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn si" onclick="setFunciona('Si')">Sí</button>
+        <button type="button" class="toggle-btn no" onclick="setFunciona('No')">No</button>
+      </div>
+
+      <span class="field-label">Observaciones</span>
+      <textarea id="obsInput" rows="3" placeholder="Ej. presenta desnivel, no cierra bien…"></textarea>
+
+      <div class="section-gap">
+        <span class="field-label">Evidencia fotográfica</span>
+        <div class="evidence-box" id="photoBox" onclick="document.getElementById('photoInput').click()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h4l2-2h6l2 2h4v13H3z"/><circle cx="12" cy="13" r="3.5"/></svg>
+          <span id="photoLabel">Tomar o adjuntar foto</span>
+        </div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+        <img id="photoPreview">
+      </div>
+
+      <div class="section-gap">
+        <span class="field-label">Firma del verificador</span>
+        <canvas id="sigPad"></canvas>
+        <div class="sig-actions">
+          <button type="button" class="link-btn" onclick="clearSignature()">Borrar firma</button>
+          <span class="link-btn" id="sigStatus">Sin firmar</span>
+        </div>
+      </div>
+
+      <div class="section-gap">
+        <span class="field-label">Ubicación</span>
+        <button type="button" class="geo-btn" id="geoBtn" onclick="captureGeo()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>
+          <span id="geoLabel">Capturar ubicación</span>
+        </button>
+        <div class="geo-result" id="geoResult"></div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn" disabled>Enviar revisión</button>
+    </form>
+
+  </section>
+
+  <!-- ================= VISTA EQUIPO REVISOR ================= -->
+  <section id="viewRevisor" class="view">
+    <div class="summary-row">
+      <div class="summary-card">
+        <div class="num" id="sumTotal">0</div>
+        <div class="label">Revisiones</div>
+      </div>
+      <div class="summary-card alert">
+        <div class="num" id="sumFail">0</div>
+        <div class="label">No funciona</div>
+      </div>
+      <div class="summary-card">
+        <div class="num" id="sumPend">0</div>
+        <div class="label">Pendientes</div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <select id="filterPlanta" onchange="renderRevisiones()">
+        <option value="">Todas las plantas</option>
+      </select>
+      <select id="filterEstado" onchange="renderRevisiones()">
+        <option value="">Todos los estados</option>
+        <option value="Pendiente">Pendiente</option>
+        <option value="Revisado">Revisado</option>
+      </select>
+    </div>
+
+    <div id="revList"></div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Datos semilla (equivalente a Catalogo_Puertas de SharePoint) ---------- */
+const CATALOGO = [{"Planta": "CORPORATIVO", "Hoja_Origen": "CORP", "Codigo_Puerta": "HON_GHT_CUARTO ELECTRICO 1", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "CORPORATIVO", "Hoja_Origen": "CORP", "Codigo_Puerta": "HON_GHT_CUARTO ELECTRICO 2", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "CORPORATIVO", "Hoja_Origen": "CORP", "Codigo_Puerta": "HON_GHT_CUARTO ELECTRICO 4", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "CORPORATIVO", "Hoja_Origen": "CORP", "Codigo_Puerta": "HON_GHT_CUARTO_BOMBAS", "Descripcion": "PLANTA POTABILIZADORA", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "PRESENTA DESNIVEL (NO CIERRA)", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "HDC", "Hoja_Origen": "HDC", "Codigo_Puerta": "HON_HDC_BODEGA_IT_FONDO", "Descripcion": "PUERTA DE BODEGA DE IT FONDO", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "HDC", "Hoja_Origen": "HDC", "Codigo_Puerta": "HON_HDC_BODEGA_IT_S.E.", "Descripcion": "BODEGA DE SERVICIOS ELECTRONICOS", "Funciona_Ultima_Revision": "", "Observaciones_Ultima_Revision": "N/A", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "HDC", "Hoja_Origen": "HDC", "Codigo_Puerta": "HON_HDC_BODEGA_IT _INFRA", "Descripcion": "BODEGA DE IT INFRA ESTRUCTURA DE REDES", "Funciona_Ultima_Revision": "", "Observaciones_Ultima_Revision": "No se encontro", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "HDC", "Hoja_Origen": "HDC", "Codigo_Puerta": "HON_HDC_BUNKER_OFICINAS", "Descripcion": "PUERTA OFICINAS DE BUNKER", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "HORARIO LABORAL 06:30 A 19:00 (PUERTA PRESENTA DESNIVEL, LO QUE IMPIDE EL CIERRE COMPLETO)", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "GILCHEM", "Hoja_Origen": "GILCHEM", "Codigo_Puerta": "HON_CHO1_PASILLO_COLOR_MATIC", "Descripcion": "PUERTA PASILLO OFICINAS VP A COLOR MATIC", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "DESHABILITADO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "GILCHEM", "Hoja_Origen": "GILCHEM", "Codigo_Puerta": "HON_CHO1_OFICINA_VP", "Descripcion": "PUERTA OFICINA VIP", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "GILCHEM", "Hoja_Origen": "GILCHEM", "Codigo_Puerta": "HON_CHO1_CUARTO_ELECTRICO", "Descripcion": "PUERTA CUARTO ELECTRICO DENTRO DE OFICINA DE MANTENIMIENTO", "Funciona_Ultima_Revision": "", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "GILCHEM", "Hoja_Origen": "GILCHEM", "Codigo_Puerta": "HON_CHO1_RRHH", "Descripcion": "PUERTA OFICINA DE RRHH", "Funciona_Ultima_Revision": "", "Observaciones_Ultima_Revision": "PUERTA CON LLAVIN", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "BIOMASA 125", "Hoja_Origen": "BIOM 125", "Codigo_Puerta": "HON_BIO1_IT ROOM", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "BIOMASA 125", "Hoja_Origen": "BIOM 125", "Codigo_Puerta": "HON_BIO1_CUARTO DE PANELES 1", "Descripcion": "CUARTO DE CONTROL 1", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "PUERTA DESNIVELADA", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "BIOMASA 125", "Hoja_Origen": "BIOM 125", "Codigo_Puerta": "HON_BIO1_SUBESTACION", "Descripcion": "CUARTO ELECTRICO .", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "BIOMASA 125", "Hoja_Origen": "BIOM 125", "Codigo_Puerta": "HON_BIO1_GRUA", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "TALLER R.", "Hoja_Origen": "TALLER R.", "Codigo_Puerta": "HON_GTR1_INGRESO TALLER REGIONAL", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "TALLER R.", "Hoja_Origen": "TALLER R.", "Codigo_Puerta": "HON_GTR1_BODEGA DE LUBRICANTES", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "TALLER R.", "Hoja_Origen": "TALLER R.", "Codigo_Puerta": "HON_GTR1_BODEGA", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 1", "Hoja_Origen": "GRB1", "Codigo_Puerta": "HON_GRB1_CUARTO DE CONTROL", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 1", "Hoja_Origen": "GRB1", "Codigo_Puerta": "HON_GRB1_CUARTO ELECTRICO", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "PUERTA DESNIVELADA", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 1", "Hoja_Origen": "GRB1", "Codigo_Puerta": "HON_GRB1_OFICINAS", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "PERSONAL LA MANTIENE CON OBSTACULOS POR FALTA DE ACCESO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 1", "Hoja_Origen": "GRB1", "Codigo_Puerta": "HON_GBR1_BODEGA", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "MAGNALOK EN MAL ESTADO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 2", "Hoja_Origen": "GRB2", "Codigo_Puerta": "HON_GRB2_TC", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "SISTEMA DESHABILITADO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 2", "Hoja_Origen": "GRB2", "Codigo_Puerta": "HON_GRB2_GENERADORES", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "SISTEMA DESHABILITADO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "REACTOR BIOLOGICO 2", "Hoja_Origen": "GRB2", "Codigo_Puerta": "HON_GRB2_CUARTO DE PANELES", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "SISTEMA DESHABILITADO", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "EXTERNO", "Hoja_Origen": "EXTERN", "Codigo_Puerta": "HON_RIO2_ OFICINA SEGURIDAD_REGIONAL", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "EXTERNO", "Hoja_Origen": "EXTERN", "Codigo_Puerta": "HON_RIO2_CMC", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "EXTERNO", "Hoja_Origen": "EXTERN", "Codigo_Puerta": "HON_RIO2_ERT", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "EXTERNO", "Hoja_Origen": "EXTERN", "Codigo_Puerta": "HON_RIO2_TC9  BOMBEROS", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN1 CHOLTEX", "Hoja_Origen": "RN1", "Codigo_Puerta": "HON_RIO1_BODEGA REPUESTOS_1 ENTRADA", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "NO ESTA HABILITADO EL LECTOR", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN1 CHOLTEX", "Hoja_Origen": "RN1", "Codigo_Puerta": "HON_RIO1_IMPORT/EXPORT_1 ENTRADA OFICINAS", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN1 CHOLTEX", "Hoja_Origen": "RN1", "Codigo_Puerta": "HON_RIO1_IMPORT/EXPORT_2 ESPECIES FISCALES", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN1 CHOLTEX", "Hoja_Origen": "RN1", "Codigo_Puerta": "HON_RIO1_OFICINAS ADMINISTRATIVAS_1 ENTRADA", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "CON EVENTO LABORAL  6 AM A 6 PM", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN2 CHOLTEX", "Hoja_Origen": "RN2", "Codigo_Puerta": "HON_RIO2_CORTINA SUB ESTACION CALDERAS", "Descripcion": "CORTINA METALICA SUB ESTACION CALDERAS", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN2 CHOLTEX", "Hoja_Origen": "RN2", "Codigo_Puerta": "HON_RIO2_TC1", "Descripcion": "PUERTA IT ROOM RN2", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN2 CHOLTEX", "Hoja_Origen": "RN2", "Codigo_Puerta": "HON_RIO2_TC2", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN2 CHOLTEX", "Hoja_Origen": "RN2", "Codigo_Puerta": "HON_RIO2_TC3", "Descripcion": "", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "MAGNALOK EN MAL ESTADO", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN3", "Hoja_Origen": "RN3", "Codigo_Puerta": "HON_RIO3_CUARTO LUBRICANTES", "Descripcion": "PUERTA CUARTO LUBRICANTES", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN3", "Hoja_Origen": "RN3", "Codigo_Puerta": "HON_RIO3_CUARTO LUBRICANTES_TEJIDO", "Descripcion": "PUERTA 2 CUARTO LUBRICANTES_TEJIDO", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN3", "Hoja_Origen": "RN3", "Codigo_Puerta": "HON_RIO3_OFICINA TEÑIDO", "Descripcion": "OFICINA DE TEÑIDO ( PRODUCCION SEDO NIVEL)", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN3", "Hoja_Origen": "RN3", "Codigo_Puerta": "HON_RIO3_LABORATORIO ELECTRONICA", "Descripcion": "PUERTA DE LABORATORIO DE ELECTRONICA", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "NESTOR HERNANDEZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN4", "Hoja_Origen": "RN4", "Codigo_Puerta": "HON_RIO4_BODEGA_SUMINISTROS 1", "Descripcion": "PUERTA QUE DA ACCESO DE PRODUCCION A BODEGA DE SUMINISTRO", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN4", "Hoja_Origen": "RN4", "Codigo_Puerta": "HON_RIO4_BODEGA SUMINISTROS 2", "Descripcion": "PUERTA QUE DA ACCESO DE OFICINA DE BODEGA A BODEGA", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN4", "Hoja_Origen": "RN4", "Codigo_Puerta": "HON_RIO4_BODEGA TEJIDO", "Descripcion": "PUERTA BODEGUITA TECNICA TC2-RAC1-PP6-D46 SW RN4TC2SW01 D46", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN4", "Hoja_Origen": "RN4", "Codigo_Puerta": "HON_RIO4_ CORTINA SUBESTACION TEÑIDO", "Descripcion": "ACCESO SUBESTACION TEÑIDO", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "PUERTA PRESENTA DESNIVEL", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN5", "Hoja_Origen": "RN5", "Codigo_Puerta": "HON_RIO5_BODEGA REPUESTO LADO CORTE", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN5", "Hoja_Origen": "RN5", "Codigo_Puerta": "HON_RIO5_BODEGA RESPUESTO LADO TEÑIDO", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN5", "Hoja_Origen": "RN5", "Codigo_Puerta": "HON_RIO5_RECURSOS HUMANOS", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN5", "Hoja_Origen": "RN5", "Codigo_Puerta": "HON_RIO5_MANTENIMIENTO", "Descripcion": "", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN6", "Hoja_Origen": "RN6", "Codigo_Puerta": "HON_RIO6_SUBESTACION TEJIDO", "Descripcion": "SUBESTACION TEJIDO RN6", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "SISTEMA DAÑADO", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN6", "Hoja_Origen": "RN6", "Codigo_Puerta": "HON_RIO6_CORTINA SUB ESTACION TEJIDO", "Descripcion": "CONTACTO MAGNETICO PARA CORTINA DE SUB ESTACION TEJIDO", "Funciona_Ultima_Revision": "No", "Observaciones_Ultima_Revision": "SISTEMA NO ESTABLE", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN6", "Hoja_Origen": "RN6", "Codigo_Puerta": "HON_RIO6_IMPORT & EXPORT_1_ENTRADA VENTANILLA", "Descripcion": "HON_RIO6_IMPORT&EXPORT_1_ENTRADA VENTANILLA", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}, {"Planta": "RN6", "Hoja_Origen": "RN6", "Codigo_Puerta": "HON_RIO6_IMPORT&EXPORT_2_ENTRADA PRODUCCION", "Descripcion": "HON_RIO6_IMPORT&EXPORT_2_ENTRADA PRODUCCION", "Funciona_Ultima_Revision": "Si", "Observaciones_Ultima_Revision": "", "Verificador_Ultima_Revision": "EDUIN RAMIREZ", "Fecha_Ultima_Revision": "02 DE AGOSTO DEL 2026", "Activa": "Si"}];
+
+const PLANTAS = [...new Set(CATALOGO.map(d => d.Planta))].sort();
+let revisiones = []; // equivalente a la lista transaccional Revisiones_Puertas
+let currentDoor = null;
+let currentFunciona = null;
+let photoDataUrl = null;
+let sigDataUrl = null;
+let geoCoords = null;
+let revCounter = 1;
+
+/* ---------- Setup selects ---------- */
+function fillPlantSelects(){
+  const sel1 = document.getElementById('plantaSelect');
+  const sel2 = document.getElementById('filterPlanta');
+  PLANTAS.forEach(p => {
+    sel1.appendChild(new Option(p, p));
+    sel2.appendChild(new Option(p, p));
+  });
+}
+fillPlantSelects();
+
+/* ---------- Tabs ---------- */
+function switchTab(name){
+  document.getElementById('viewSupervisor').classList.toggle('active', name === 'supervisor');
+  document.getElementById('viewRevisor').classList.toggle('active', name === 'revisor');
+  document.getElementById('tabSupervisor').classList.toggle('active', name === 'supervisor');
+  document.getElementById('tabRevisor').classList.toggle('active', name === 'revisor');
+  if(name === 'revisor') renderRevisiones();
+}
+
+/* ---------- Selector de puerta ---------- */
+function renderDoorList(){
+  const planta = document.getElementById('plantaSelect').value;
+  const q = document.getElementById('doorSearch').value.trim().toUpperCase();
+  const box = document.getElementById('doorList');
+  box.innerHTML = '';
+  if(!planta){ box.innerHTML = '<div class="empty-state">Selecciona una planta para ver sus puertas.</div>'; return; }
+  const items = CATALOGO.filter(d => d.Planta === planta &&
+    (!q || d.Codigo_Puerta.toUpperCase().includes(q) || (d.Descripcion||'').toUpperCase().includes(q)));
+  if(items.length === 0){ box.innerHTML = '<div class="empty-state">Sin resultados.</div>'; return; }
+  items.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'door-result';
+    const lastStatus = d.Funciona_Ultima_Revision === 'No' ? '<span class="status-pill fail">No funciona</span>' : '<span class="status-pill ok">Funciona</span>';
+    el.innerHTML = `<div><div class="door-code">${d.Codigo_Puerta}</div><div class="door-desc">${d.Descripcion || 'Sin descripción'}</div></div>${lastStatus}`;
+    el.onclick = () => openReviewForm(d);
+    box.appendChild(el);
+  });
+}
+renderDoorList();
+
+function openReviewForm(door){
+  currentDoor = door;
+  currentFunciona = null;
+  photoDataUrl = null;
+  sigDataUrl = null;
+  geoCoords = null;
+  document.getElementById('formDoorCode').textContent = door.Codigo_Puerta;
+  document.getElementById('formDoorDesc').textContent = door.Descripcion || 'Sin descripción';
+  document.getElementById('obsInput').value = '';
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('photoBox').classList.remove('filled');
+  document.getElementById('photoLabel').textContent = 'Tomar o adjuntar foto';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('geoBtn').classList.remove('captured');
+  document.getElementById('geoLabel').textContent = 'Capturar ubicación';
+  document.getElementById('geoResult').textContent = '';
+  document.getElementById('submitBtn').disabled = true;
+  clearSignature();
+  document.getElementById('pickerView').style.display = 'none';
+  document.getElementById('reviewForm').style.display = 'block';
+  initSigPad();
+}
+
+function backToPicker(){
+  document.getElementById('reviewForm').style.display = 'none';
+  document.getElementById('pickerView').style.display = 'block';
+}
+
+function setFunciona(val){
+  currentFunciona = val;
+  document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector(`.toggle-btn.${val === 'Si' ? 'si' : 'no'}`).classList.add('selected');
+  checkFormReady();
+}
+
+/* ---------- Foto ---------- */
+function handlePhoto(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photoDataUrl = ev.target.result;
+    document.getElementById('photoBox').classList.add('filled');
+    document.getElementById('photoLabel').textContent = 'Foto adjuntada ✓';
+    const img = document.getElementById('photoPreview');
+    img.src = photoDataUrl;
+    img.style.display = 'block';
+    checkFormReady();
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---------- Firma ---------- */
+let sigCtx, drawing = false;
+function initSigPad(){
+  const canvas = document.getElementById('sigPad');
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * ratio;
+  canvas.height = canvas.clientHeight * ratio;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.scale(ratio, ratio);
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+  sigCtx.strokeStyle = '#eceff2';
+  const pos = e => {
+    const r = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX - r.left, y: t.clientY - r.top};
+  };
+  const start = e => { drawing = true; const p = pos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x,p.y); e.preventDefault(); };
+  const move = e => { if(!drawing) return; const p = pos(e); sigCtx.lineTo(p.x,p.y); sigCtx.stroke(); e.preventDefault(); };
+  const end = () => { if(!drawing) return; drawing = false; sigDataUrl = canvas.toDataURL(); document.getElementById('sigStatus').textContent = 'Firma capturada ✓'; checkFormReady(); };
+  canvas.onmousedown = start; canvas.onmousemove = move; canvas.onmouseup = end; canvas.onmouseleave = end;
+  canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = end;
+}
+function clearSignature(){
+  const canvas = document.getElementById('sigPad');
+  if(sigCtx) sigCtx.clearRect(0,0,canvas.width,canvas.height);
+  sigDataUrl = null;
+  document.getElementById('sigStatus').textContent = 'Sin firmar';
+  checkFormReady();
+}
+
+/* ---------- Geolocalización ---------- */
+function captureGeo(){
+  const btn = document.getElementById('geoBtn');
+  const label = document.getElementById('geoLabel');
+  const result = document.getElementById('geoResult');
+  label.textContent = 'Obteniendo ubicación…';
+  if(!navigator.geolocation){
+    result.textContent = 'Geolocalización no disponible en este navegador.';
+    label.textContent = 'Capturar ubicación';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      geoCoords = {lat: pos.coords.latitude.toFixed(4), lng: pos.coords.longitude.toFixed(4)};
+      btn.classList.add('captured');
+      label.textContent = 'Ubicación capturada ✓';
+      result.textContent = `Lat ${geoCoords.lat}, Lng ${geoCoords.lng}`;
+      checkFormReady();
+    },
+    () => {
+      label.textContent = 'Capturar ubicación';
+      result.textContent = 'No se pudo obtener la ubicación (permiso denegado o no disponible en esta vista previa).';
+    },
+    {timeout: 6000}
+  );
+}
+
+/* ---------- Validación y envío ---------- */
+function checkFormReady(){
+  const ready = currentFunciona && sigDataUrl;
+  document.getElementById('submitBtn').disabled = !ready;
+}
+
+function submitReview(e){
+  e.preventDefault();
+  const id = `REV-${String(revCounter++).padStart(5,'0')}`;
+  const now = new Date();
+  const rev = {
+    ID_Revision: id,
+    Fecha_Hora: now.toLocaleString('es-HN'),
+    Planta: currentDoor.Planta,
+    Codigo_Puerta: currentDoor.Codigo_Puerta,
+    Descripcion_Puerta: currentDoor.Descripcion,
+    Verificador: 'Supervisor de turno',
+    Funciona: currentFunciona,
+    Observaciones: document.getElementById('obsInput').value.trim(),
+    tienePhoto: !!photoDataUrl,
+    tieneFirma: !!sigDataUrl,
+    geo: geoCoords,
+    Estado: 'Pendiente'
+  };
+  revisiones.unshift(rev);
+  showToast(currentFunciona === 'No'
+    ? 'Revisión enviada — se notificó a mantenimiento'
+    : 'Revisión enviada correctamente');
+  backToPicker();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ---------- Dashboard equipo revisor ---------- */
+function renderRevisiones(){
+  const planta = document.getElementById('filterPlanta').value;
+  const estado = document.getElementById('filterEstado').value;
+  const list = revisiones.filter(r => (!planta || r.Planta === planta) && (!estado || r.Estado === estado));
+
+  document.getElementById('sumTotal').textContent = revisiones.length;
+  document.getElementById('sumFail').textContent = revisiones.filter(r => r.Funciona === 'No').length;
+  document.getElementById('sumPend').textContent = revisiones.filter(r => r.Estado === 'Pendiente').length;
+
+  const box = document.getElementById('revList');
+  box.innerHTML = '';
+  if(list.length === 0){
+    box.innerHTML = '<div class="empty-state">Aún no hay revisiones enviadas. Envía una desde la vista Supervisor para verla aquí.</div>';
+    return;
+  }
+  list.forEach(r => {
+    const el = document.createElement('div');
+    el.className = `rev-item ${r.Funciona === 'No' ? 'fail' : 'ok'}`;
+    el.innerHTML = `
+      <div class="rev-top">
+        <div>
+          <div class="door-code">${r.Codigo_Puerta}</div>
+          <div class="rev-meta">${r.Planta} · ${r.Fecha_Hora} · ${r.Verificador}</div>
+        </div>
+        <span class="status-pill ${r.Funciona === 'No' ? 'fail' : 'ok'}">${r.Funciona === 'No' ? 'No funciona' : 'Funciona'}</span>
+      </div>
+      ${r.Observaciones ? `<div class="rev-obs">${r.Observaciones}</div>` : ''}
+      <div class="rev-badges">
+        <span class="badge ${r.tienePhoto ? 'has' : ''}">📷 Foto</span>
+        <span class="badge ${r.tieneFirma ? 'has' : ''}">✍️ Firma</span>
+        <span class="badge ${r.geo ? 'has' : ''}">${r.geo ? `📍 ${r.geo.lat}, ${r.geo.lng}` : '📍 Sin ubicación'}</span>
+        <span class="badge">${r.Estado}</span>
+      </div>
+    `;
+    box.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>
